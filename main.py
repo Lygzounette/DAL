@@ -137,7 +137,8 @@ def use_powerup(slot):
 runFrames = s.FPS * 2
 selected_slot = 0
 mUIc = 0
-mouse_pos = [0, 0]
+menu_index = 2
+menu_page = "main"
 while 1:
     # ------------------------------------------------------------------------------------------------------------------
     # Gestion des paramètres liés au temps
@@ -204,7 +205,7 @@ while 1:
 
         if is_key_pressed(KeyboardKey.KEY_P): s.reset_map()
 
-    if is_key_pressed(KeyboardKey.KEY_ESCAPE) and not campain.first_time:
+    if is_key_pressed(KeyboardKey.KEY_ESCAPE) and not campain.first_time and not menu_page == "parameters":
         runFrames = 0
         campain.in_menu = not campain.in_menu
         campain.in_world = not campain.in_world
@@ -281,48 +282,112 @@ while 1:
     # --------------------------------------------------------------------------------------------------------------
     if campain.in_menu:
         if is_key_down(KeyboardKey.KEY_ESCAPE) and runFrames > 20:
-            window_should_close()
-            sys.exit()
+            if menu_page == "parameters":
+                menu_page = "main"
+                menu_index = 0
+                runFrames = 0
+            else:
+                window_should_close()
+                sys.exit()
 
         mx, my = s.sWidth // 2, s.sHeight // 2
+
+        # Render background
         for x in range(s.sWidth // 250):
             for y in range(s.sHeight // 250):
                 draw_texture(s.menu_background, 750 * x, 750 * y, WHITE)
 
-        draw_texture(s.menu_logo, mx - 700, -100, WHITE)
-        draw_text(f"{s.pickable_hotbar[0]} Mobs", 22, 22, 50, DARKGRAY)
-        draw_text(f"{s.pickable_hotbar[1]} Blocs", 22, 77, 50, DARKGRAY)
-        draw_text(f"{s.pickable_hotbar[0]} Mobs", 20, 20, 50, BLACK)
-        draw_text(f"{s.pickable_hotbar[1]} Blocs", 20, 75, 50, BLACK)
+        if menu_page == "main":
+            text_boxes = [
+                "-||| *Quit",
+                "-|| *Campagne",
+                "-| *Labyrinthe",
+            ]
+            if not campain.first_time:
+                text_boxes.append("-|> *Resume")
 
+            # Draw header graphics
+            draw_texture(s.menu_options, s.sWidth - 69, 5, RED if menu_index == 4 else WHITE)
+            draw_texture(s.menu_logo, mx - 700, -100, WHITE)
+            draw_text(f"{s.pickable_hotbar[1]} Mobs", 22, 22, 50, DARKGRAY)
+            draw_text(f"{s.pickable_hotbar[0]} Blocs", 22, 77, 50, DARKGRAY)
+            draw_text(f"{s.pickable_hotbar[1]} Mobs", 20, 20, 50, BLACK)
+            draw_text(f"{s.pickable_hotbar[0]} Blocs", 20, 75, 50, BLACK)
 
-        if is_key_pressed(KeyboardKey.KEY_DOWN):
-            mouse_pos[1] -= 128
-        if is_key_pressed(KeyboardKey.KEY_UP):
-            mouse_pos[1] += 128
-        if mouse_pos[1] < -256: mouse_pos[1] = -256
-        if mouse_pos[1] > 128: mouse_pos[1] = 128
+            # Navigate main menu (keys reversed as in your code)
+            if is_key_pressed(KeyboardKey.KEY_UP):
+                menu_index = min(menu_index + 1, 4)
+            if is_key_pressed(KeyboardKey.KEY_DOWN):
+                menu_index = max(menu_index - 1, 0)
 
-        text_boxes = ["-||| *quitter", "-|| *campagne", "-| *labyrinthe"]
-        if not campain.first_time:
-            text_boxes.append("-|> *reprendre")
-        for i in range(len(text_boxes)):
-            draw_rectangle(50, my - (i - 2) * 128, s.sWidth - 100, 120, (200, 100, 100, 50))
-            draw_rectangle(55, my - (i - 2) * 128 + 5, s.sWidth - 110, 110, (70, 15, 10, 255))
-            draw_text(text_boxes[i], 65, my - (i - 2) * 128 + 22, 80, DARKGRAY)
-            draw_text(text_boxes[i], 65, my - (i - 2) * 128 + 20, 80, BLACK)
+            # Draw main menu options
+            for i, txt in enumerate(text_boxes):
+                y_pos = my - (i - 2) * 128
+                draw_rectangle(50, y_pos, s.sWidth - 100, 120, (200, 100, 100, 50))
+                draw_rectangle(55, y_pos + 5, s.sWidth - 110, 110, (70, 15, 10, 255))
+                draw_text(txt, 65, y_pos + 22, 80, DARKGRAY)
+                draw_text(txt, 65, y_pos + 20, 80, BLACK)
 
-        if mouse_pos[1] < 130 and mouse_pos[1] > -300:
-            # Afficher "reprendre" seulement si il y a déjà une partie en cours
-            if mouse_pos[1] < 120 or not campain.first_time:
-                draw_rectangle(50, my - mouse_pos[1], s.sWidth - 100, 120, (255, 100, 100, 70))
+            # Highlight the currently selected main menu option
+            if 0 <= menu_index < len(text_boxes):
+                draw_rectangle(50, my - (menu_index - 2) * 128, s.sWidth - 100, 120, (255, 100, 100, 70))
 
-        if is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_LEFT) or is_key_pressed(KEY_ENTER):
-            if mouse_pos[1] == -256:
-                close_window()
-                break
-            if mouse_pos[1] == 128 and not campain.first_time: s.resume()
-            if mouse_pos[1] == -128: s.switch_stage(1)
-            if mouse_pos[1] == 0: s.switch_stage(0)
+            # Handle main menu selection
+            if is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_LEFT) or is_key_pressed(KEY_ENTER):
+                if menu_index == 0:
+                    close_window()
+                    break
+                elif menu_index == 3 and not campain.first_time:
+                    s.resume()
+                elif menu_index == 1:
+                    s.switch_stage(1)
+                elif menu_index == 2:
+                    s.switch_stage(0)
+                elif menu_index == 4:
+                    menu_page = "parameters"
+                    menu_index = 0  # Reset for parameter page
+
+        elif menu_page == "parameters":
+            # Draw title with a slight shadow effect
+            draw_text("Menu des options", mx - 500, 49, 120, GRAY)
+            draw_text("Menu des options", mx - 500, 50, 120, DARKGRAY)
+            draw_text("Menu des options", mx - 500, 52, 120, BLACK)
+
+            # Define the parameter options
+            param_texts = [
+                f">> Augmenter la distance d'affichage: {campain.render_distance}",
+                f">> Diminuer la distance d'affichage",
+                f">>> Mode Danger: {s.danger_mod}",
+            ]
+
+            # Navigate parameter menu (same key logic as main menu)
+            if is_key_pressed(KeyboardKey.KEY_UP):
+                menu_index = min(menu_index + 1, len(param_texts) - 1)
+            if is_key_pressed(KeyboardKey.KEY_DOWN):
+                menu_index = max(menu_index - 1, 0)
+
+            # Draw parameter options and highlight the selection
+            for i, txt in enumerate(param_texts):
+                y_pos = my - (i - 1) * 128
+                draw_rectangle(50, y_pos - 50, s.sWidth - 100, 120, (200, 100, 100, 50))
+                draw_rectangle(55, y_pos - 45, s.sWidth - 110, 110, (70, 15, 10, 255))
+                draw_text(txt, 120, y_pos - 20, 60, DARKGRAY)
+                draw_text(txt, 120, y_pos - 18, 60, BLACK)
+                if menu_index == i:
+                    draw_rectangle(50, y_pos - 50, s.sWidth - 100, 120, (255, 100, 100, 70))
+
+            draw_text("ECHAP pour quitter", mx - 200, s.sHeight - 100, 30, DARKGRAY)
+            draw_text("ECHAP pour quitter", mx - 200, s.sHeight - 98, 30, BLACK)
+
+            # Handle parameter selection (placeholder actions)
+            if is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_LEFT) or is_key_pressed(KEY_ENTER):
+                if menu_index == 0:
+                    s.distance_of_view += 1
+                    campain.render_distance += 1
+                if menu_index == 1:
+                    s.distance_of_view -= 1
+                    campain.render_distance -= 1
+                elif menu_index == 2:
+                    s.danger_mod = not s.danger_mod
     # --------------------------------------------------------------------------------------------------------------
     end_drawing()

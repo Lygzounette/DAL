@@ -30,6 +30,7 @@ range_view = range(-distance_of_view + 2, distance_of_view - 1)  # Liste de nomb
 FoV = 90  # grand FoV (Field of View = Champ de Vision) pour une impression de grandeur de l'espace
 y_player_offset = 0  # Déplacement vertical artificiel (pas, recul..)
 mob_strength = 1.0  # Coefficient multiplicateur de la force des monstres
+danger_mod = True
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -142,6 +143,7 @@ FX_bullet_texture = load_texture(resource_path("resources/bullet.png"))
 FX_shadow_texture = resize_image_to_screen(resource_path("resources/shadow.png"), sWidth, sHeight)
 menu_background = load_texture(resource_path("resources/menubackground.png"))
 menu_logo = load_texture(resource_path("resources/logo.png"))
+menu_options = load_texture(resource_path("resources/options.png"))
 
 main_gun_2d_texture = load_texture(resource_path("resources/main_gun_2d_texture.png"))
 riffle_gun_2d_texture = load_texture(resource_path("resources/riffle_gun_2d_texture.png"))
@@ -654,13 +656,15 @@ def build_map():
             b = blocks[pos]
             draw_custom(pos, b.model, b.color, b.refraction)
 
-    mobs_copy = mobs.copy()  # Copy pour éviter les erreurs de pointeurs (del ..)
-    for pos in mobs_copy:
-        x1, y1, z1 = pos
-        if abs(x - x1) < distance_of_view and \
-                abs(y - y1) < distance_of_view and \
-                abs(z - z1) < distance_of_view:  # Si l'objet est suffisemment proche du joueur
-            mobs_copy[pos].draw_mob()
+    if danger_mod:
+        mobs_copy = mobs.copy()  # Copy pour éviter les erreurs de pointeurs (del ..)
+        for pos in mobs_copy:
+            x1, y1, z1 = pos
+            if abs(x - x1) < distance_of_view and \
+                    abs(y - y1) < distance_of_view and \
+                    abs(z - z1) < distance_of_view:  # Si l'objet est suffisemment proche du joueur
+                mobs_copy[pos].draw_mob()
+
     items_copy = items.copy()  # Copy pour éviter les erreurs de pointeurs (del ..)
     for pos in items_copy:
         x1, y1, z1 = pos
